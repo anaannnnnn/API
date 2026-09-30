@@ -9,11 +9,13 @@ let useProxy = false;
 
 async function api(method, params) {
   const qs = new URLSearchParams({ format: 'json', ...params }).toString();
-  const attempts = useProxy ? ['/api/', API] : [API, '/api/'];
+  const CORS = 'https://corsproxy.io/?url=';
+  const attempts = useProxy ? ['/api/', API, CORS] : [API, '/api/', CORS];
   let err;
   for (const base of attempts) {
     try {
-      const r = await fetch(`${base}video/${method}/?${qs}`);
+      const url = `${base === CORS ? API : base}video/${method}/?${qs}`;
+      const r = await fetch(base === CORS ? CORS + encodeURIComponent(url) : url);
       if (!r.ok) throw new Error(r.status);
       const j = await r.json();
       useProxy = base === '/api/';

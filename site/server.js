@@ -5,10 +5,16 @@ const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascrip
 http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname.startsWith('/api/')) {
-    https.get('https://www.eporner.com/api/v2/' + u.pathname.slice(5) + u.search, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
-      res.writeHead(r.statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' });
-      r.pipe(res);
-    }).on('error', () => { res.writeHead(502); res.end('{"error":"upstream"}'); });
+    const hosts = (process.env.UPSTREAM || 'https://www.eporner.com,https://eporner.com').split(',');
+    const tryHost = i => {
+      if (i >= hosts.length) { res.writeHead(502); return res.end('{"error":"upstream"}'); }
+      https.get(hosts[i].replace(/\/$/, '') + '/api/v2/' + u.pathname.slice(5) + u.search, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
+        if (r.statusCode !== 200) { r.resume(); return tryHost(i + 1); }
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' });
+        r.pipe(res);
+      }).on('error', () => tryHost(i + 1));
+    };
+    tryHost(0);
     return;
   }
   let p = path.join(__dirname, 'public', u.pathname === '/' ? 'index.html' : path.normalize(u.pathname));
