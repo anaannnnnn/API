@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Stream HD videos by category, performer and popularity.">
+<title>Streamly – HD Streaming</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gt">
+  <div class="gate-box"><h2 id="gt">Adults only (18+)</h2>
+    <p>This site contains age-restricted material. You must be 18 or older to enter.</p>
+    <button id="enter" class="btn primary">I am 18 or older</button>
+    <a class="btn" href="https://www.google.com">Leave</a></div>
+</div>
+<header class="top">
+  <a href="#/" class="logo">Stream<b>ly</b></a>
+  <form id="searchForm" class="search" role="search"><input id="q" type="search" placeholder="Search videos…" aria-label="Search"><button aria-label="Search">🔍</button></form>
+  <button id="menuBtn" class="btn menu" aria-label="Menu">☰</button>
+  <nav id="nav"><a href="#/" data-r="home">Home</a><a href="#/categories" data-r="categories">Categories</a><a href="#/performers" data-r="performers">Performers</a></nav>
+</header>
+<main id="app"></main>
+<footer><p>Videos provided via the Eporner API v2. All models 18+. © Streamly</p></footer>
+<div id="toast" class="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
