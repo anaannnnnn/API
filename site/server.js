@@ -4,6 +4,16 @@ const PORT = process.env.PORT || process.argv[2] || 3000;
 const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' };
 http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
+  if (u.pathname === '/img') {
+    let t; try { t = new URL(u.searchParams.get('u')); } catch { res.writeHead(400); return res.end(); }
+    if (t.protocol !== 'https:' || !/(^|\.)eporner\.com$/.test(t.hostname)) { res.writeHead(403); return res.end(); }
+    https.get(t, { headers: { 'User-Agent': 'Mozilla/5.0', Referer: 'https://www.eporner.com/' } }, r => {
+      if (r.statusCode !== 200) { r.resume(); res.writeHead(502); return res.end(); }
+      res.writeHead(200, { 'Content-Type': r.headers['content-type'] || 'image/jpeg', 'Cache-Control': 'public, max-age=86400' });
+      r.pipe(res);
+    }).on('error', () => { res.writeHead(502); res.end(); });
+    return;
+  }
   if (u.pathname.startsWith('/api/')) {
     const hosts = (process.env.UPSTREAM || 'https://www.eporner.com,https://eporner.com').split(',');
     const tryHost = i => {
