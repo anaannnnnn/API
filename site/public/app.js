@@ -6,14 +6,18 @@ const CATS = ['4k','amateur','anal','asian','babe','bbw','big tits','blonde','bl
 const PERFORMERS = ['Angela White','Riley Reid','Mia Khalifa','Lana Rhoades','Abella Danger','Eva Elfie','Adriana Chechik','Emily Willis','Jia Lissa','Kendra Lust','Lexi Luna','Mia Malkova','Nicole Aniston','Sasha Grey','Sophie Dee','Stella Cox'];
 const hue = s => [...s].reduce((a, c) => a + c.charCodeAt(0) * 7, 0) % 360;
 let useProxy = false;
+const img = u => '/img?u=' + encodeURIComponent(u || '');
+window.imgFallback = el => { const o = el.dataset.o; el.onerror = null; if (o) el.src = o; };
 
 async function api(method, params) {
   const qs = new URLSearchParams({ format: 'json', ...params }).toString();
-  const attempts = useProxy ? ['/api/', API] : [API, '/api/'];
+  const CORS = 'https://corsproxy.io/?url=';
+  const attempts = useProxy ? ['/api/', API, CORS] : [API, '/api/', CORS];
   let err;
   for (const base of attempts) {
     try {
-      const r = await fetch(`${base}video/${method}/?${qs}`);
+      const url = `${base === CORS ? API : base}video/${method}/?${qs}`;
+      const r = await fetch(base === CORS ? CORS + encodeURIComponent(url) : url);
       if (!r.ok) throw new Error(r.status);
       const j = await r.json();
       useProxy = base === '/api/';
@@ -25,7 +29,7 @@ async function api(method, params) {
 const cache = new Map();
 const search = p => { const k = JSON.stringify(p); if (!cache.has(k)) cache.set(k, api('search', p).catch(e => { cache.delete(k); throw e; })); return cache.get(k); };
 
-const card = v => `<a class="card" href="#/watch/${esc(v.id)}"><div class="th"><img loading="lazy" src="${esc(v.default_thumb?.src)}" alt="${esc(v.title)}"><span class="dur">${esc(v.length_min)}</span></div><div class="ci"><div class="ct">${esc(v.title)}</div><div class="meta">${Number(v.views).toLocaleString()} views · ★ ${esc(v.rate)}</div></div></a>`;
+const card = v => `<a class="card" href="#/watch/${esc(v.id)}"><div class="th"><img loading="lazy" src="${esc(img(v.default_thumb?.src))}" data-o="${esc(v.default_thumb?.src)}" onerror="imgFallback(this)" alt="${esc(v.title)}"><span class="dur">${esc(v.length_min)}</span></div><div class="ci"><div class="ct">${esc(v.title)}</div><div class="meta">${Number(v.views).toLocaleString()} views · ★ ${esc(v.rate)}</div></div></a>`;
 const skel = n => `<div class="grid">${'<div class="skel"></div>'.repeat(n)}</div>`;
 const fail = () => `<div class="msg">Couldn't load videos. <button class="btn" onclick="route()">Retry</button></div>`;
 
@@ -56,7 +60,7 @@ async function home(page, order) {
   app.innerHTML = `<div class="skel" style="height:380px"></div>${skel(8)}`;
   const [top, list] = await Promise.all([search({ query: 'all', per_page: 1, order: 'top-weekly', thumbsize: 'big' }), search({ query: 'all', per_page: 24, page, order, thumbsize: 'big' })]);
   const h = top.videos?.[0];
-  app.innerHTML = (h && page === 1 ? `<section class="hero" style="background-image:url('${esc(h.default_thumb.src)}')"><div class="hero-in"><span class="tag">TOP THIS WEEK</span><h1>${esc(h.title)}</h1><p class="meta">${esc(h.length_min)} · ${Number(h.views).toLocaleString()} views</p><a class="btn primary" href="#/watch/${esc(h.id)}">▶ Watch now</a></div></section>` : '')
+  app.innerHTML = (h && page === 1 ? `<section class="hero" style="background-image:url('${esc(img(h.default_thumb.src))}')"><div class="hero-in"><span class="tag">TOP THIS WEEK</span><h1>${esc(h.title)}</h1><p class="meta">${esc(h.length_min)} · ${Number(h.views).toLocaleString()} views</p><a class="btn primary" href="#/watch/${esc(h.id)}">▶ Watch now</a></div></section>` : '')
     + `<div class="chips">${CATS.slice(0, 14).map(c => `<a class="chip" href="#/tag/${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}<a class="chip" href="#/categories">All →</a></div>`
     + `<div class="bar"><h2>Videos</h2>${sortBar('#/', order)}</div><div class="grid">${list.videos.map(card).join('')}</div>${pager('#/', page, list.total_pages, order)}`;
 }
@@ -74,7 +78,7 @@ async function performers() {
   app.innerHTML = `<div class="bar"><h2>Performers</h2></div><div class="grid" id="pg" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${PERFORMERS.map(n => `<a class="perf" href="#/search/${encodeURIComponent(n)}"><div class="av" data-n="${esc(n)}" style="background-color:hsl(${hue(n)},50%,30%)"></div><div>${esc(n)}</div></a>`).join('')}</div>`;
   // fill avatars with the top video thumbnail for each performer
   for (const el of document.querySelectorAll('.av')) {
-    search({ query: el.dataset.n, per_page: 1, order: 'top-rated', thumbsize: 'medium' }).then(d => { const t = d.videos?.[0]?.default_thumb?.src; if (t) el.style.backgroundImage = `url('${t}')`; }).catch(() => {});
+    search({ query: el.dataset.n, per_page: 1, order: 'top-rated', thumbsize: 'medium' }).then(d => { const t = d.videos?.[0]?.default_thumb?.src; if (t) el.style.backgroundImage = `url('${img(t)}')`; }).catch(() => {});
   }
 }
 async function watch(id) {
