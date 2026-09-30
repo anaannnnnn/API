@@ -11,13 +11,14 @@ window.imgFallback = el => { const o = el.dataset.o; el.onerror = null; if (o) e
 
 async function api(method, params) {
   const qs = new URLSearchParams({ format: 'json', ...params }).toString();
-  const CORS = 'https://corsproxy.io/?url=';
-  const attempts = useProxy ? ['/api/', API, CORS] : [API, '/api/', CORS];
+  const CORS = 'https://corsproxy.io/?url=', CORS2 = 'https://api.allorigins.win/raw?url=';
+  const attempts = useProxy ? ['/api/', API, CORS, CORS2] : [API, '/api/', CORS, CORS2];
   let err;
   for (const base of attempts) {
     try {
-      const url = `${base === CORS ? API : base}video/${method}/?${qs}`;
-      const r = await fetch(base === CORS ? CORS + encodeURIComponent(url) : url);
+      const viaCors = base === CORS || base === CORS2;
+      const url = `${viaCors ? API : base}video/${method}/?${qs}`;
+      const r = await fetch(viaCors ? base + encodeURIComponent(url) : url, { signal: AbortSignal.timeout(10000) });
       if (!r.ok) throw new Error(r.status);
       const j = await r.json();
       useProxy = base === '/api/';
